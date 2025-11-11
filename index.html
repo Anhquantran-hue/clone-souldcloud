@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Clone SoundCloud | Visualizer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0f1117;
+        --bg-soft: #131621;
+        --line: #222738;
+        --text: #e6e7ea;
+        --muted: #a3a8b8;
+        --accent: #ff6a00;
+        --accent2: #4dbbe6;
+        --r: 16px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 16px;
+        height: 100vh;
+        padding: 16px;
+      }
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
+        }
+      }
+      .card {
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, var(--accent), #ff3e00);
+        font-weight: 700;
+      }
+      .brand h1 {
+        font-size: 1rem;
+        margin: 0;
+      }
+      .search {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .search input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #0c0f18;
+        color: var(--text);
+        outline: none;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      .btn {
+        border: 1px solid var(--line);
+        background: #0c0f18;
+        color: var(--text);
+        padding: 9px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .btn:hover {
+        border-color: #2b3146;
+      }
+      .btn.danger {
+        background: #231417;
+        border-color: #44222a;
+      }
+      .btn.primary {
+        background: linear-gradient(135deg, var(--accent), #ff3e00);
+        border: none;
+      }
+      .toolbar input[type="file"] {
+        display: none;
+      }
+      .switch {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .list {
+        padding: 10px;
+        overflow: auto;
+        min-height: 0;
+      }
+      .song {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .song:hover {
+        background: #0c0f18;
+      }
+      .song.active {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 106, 0, 0.15),
+          rgba(77, 187, 230, 0.15)
+        );
+        outline: 1px solid #2b3146;
+      }
+      .cover {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #222738;
+      }
+      .meta {
+        flex: 1;
+        min-width: 0;
+      }
+      .title {
+        font-size: 0.98rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .artist {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      /* Player */
+      .player {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 0;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .badges {
+        display: flex;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .stage {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 16px;
+        padding: 16px;
+        min-height: 0;
+      }
+      @media (max-width: 980px) {
+        .stage {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 260px;
+        }
+      }
+      .stage.no-viz {
+        grid-template-columns: 1fr;
+      }
+      .art {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .art .img {
+        width: 100%;
+        aspect-ratio: 1/1;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 1px solid var(--line);
+      }
+      .info h2 {
+        margin: 0.2rem 0 0.1rem;
+        font-size: 1.2rem;
+      }
+      .info p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .visual {
+        position: relative;
+        height: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #0c0f18;
+      }
+      .visual[hidden] {
+        display: none;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* Controls */
+      .controls {
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 10px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .time {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+      .progress {
+        position: relative;
+        height: 8px;
+        border-radius: 999px;
+        background: #1a1f2f;
+        cursor: pointer;
+        flex: 1;
+        border: 1px solid var(--line);
+      }
+      .bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        border-radius: inherit;
+      }
+      .handle {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .media {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+      }
+      .round {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+      .right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .vol {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+      }
+      .vol input[type="range"] {
+        accent-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- SIDEBAR -->
+      <aside class="sidebar card">
+        <div class="brand">
+          <div class="logo">♪</div>
+          <h1>Clone SoundCloud | Visualizer</h1>
+        </div>
+        <div class="search">
+          <input id="search" placeholder="Tìm bài hát / nghệ sĩ…" />
+        </div>
+        <div class="toolbar">
+          <label class="btn" title="Thêm nhạc"
+            ><input id="fileInput" type="file" accept="audio/*" multiple />+
+            Thêm nhạc</label
+          >
+          <button id="clearAll" class="btn danger">🗑 Xóa tất cả</button>
+          <span class="switch">
+            <input id="toggleViz" type="checkbox" checked /> Visualizer
+          </span>
+        </div>
+        <div id="list" class="list"></div>
+      </aside>
+
+      <!-- PLAYER -->
+      <section class="player card">
+        <div class="header">
+          <div class="badges">Đang phát</div>
+          <div class="badges">HTML · CSS · JS</div>
+        </div>
+
+        <div class="stage">
+          <div class="art">
+            <img
+              id="cover"
+              class="img"
+              src="https://picsum.photos/800?random=11"
+              alt=""
+            />
+            <div class="info">
+              <h2 id="title">—</h2>
+              <p id="artist">—</p>
+            </div>
+          </div>
+          <div class="visual" id="vizBox">
+            <canvas id="canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="row">
+            <span id="cur" class="time">0:00</span>
+            <div class="progress" id="progress">
+              <div class="bar" id="bar"></div>
+              <div class="handle" id="handle"></div>
+            </div>
+            <span id="dur" class="time">0:00</span>
+          </div>
+          <div class="row">
+            <div class="media">
+              <button id="prev" class="btn round" title="Bài trước">⏮</button>
+              <button
+                id="play"
+                class="btn round primary"
+                title="Phát / Tạm dừng"
+              >
+                ▶
+              </button>
+              <button id="next" class="btn round" title="Bài tiếp">⏭</button>
+            </div>
+            <div class="right">
+              <div class="vol">
+                🔊
+                <input
+                  id="volume"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.9"
+                />
+              </div>
+            </div>
+          </div>
+          <audio id="audio" crossorigin="anonymous"></audio>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      /* ========== IndexedDB (lưu blob cho file upload ngoài /songs) ========== */
+      const DB_NAME = "lhu-music-db",
+        DB_VER = 1,
+        STORE = "tracks";
+      function openDB() {
+        return new Promise((res, rej) => {
+          const r = indexedDB.open(DB_NAME, DB_VER);
+          r.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE))
+              db.createObjectStore(STORE, { keyPath: "name" });
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+      }
+      async function idbPut(name, blob, meta) {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(STORE, "readwrite");
+          tx.objectStore(STORE).put({ name, blob, meta });
+          tx.oncomplete = () => res();
+          tx.onerror = () => rej(tx.error);
+        });
+      }
+      async function idbGetAll() {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(STORE, "readonly");
+          const rq = tx.objectStore(STORE).getAll();
+          rq.onsuccess = () => res(rq.result || []);
+          rq.onerror = () => rej(rq.error);
+        });
+      }
+      async function idbClear() {
+        const db = await openDB();
+        return new Promise((res, rej) => {
+          const tx = db.transaction(STORE, "readwrite");
+          const rq = tx.objectStore(STORE).clear();
+          rq.onsuccess = () => res();
+          rq.onerror = () => rej(rq.error);
+        });
+      }
+
+      /* ========== Data & elements ========== */
+      const initialSongs = [
+        {
+          title: "Lạc Trôi",
+          artist: "Sơn Tùng M-TP",
+          src: "songs/lactroi.mp3",
+          cover: "https://picsum.photos/800?random=1",
+          persistent: true,
+        },
+        {
+          title: "Tháng Năm",
+          artist: "Soobin",
+          src: "songs/thangnam.mp3",
+          cover: "https://picsum.photos/800?random=2",
+          persistent: true,
+        },
+      ];
+      let songs =
+        JSON.parse(localStorage.getItem("songs") || "null") || initialSongs;
+      let index = parseInt(localStorage.getItem("index") || "0", 10) || 0;
+
+      const listEl = document.getElementById("list"),
+        audio = document.getElementById("audio");
+      const coverEl = document.getElementById("cover"),
+        titleEl = document.getElementById("title"),
+        artistEl = document.getElementById("artist");
+      const playBtn = document.getElementById("play"),
+        prevBtn = document.getElementById("prev"),
+        nextBtn = document.getElementById("next");
+      const fileInput = document.getElementById("fileInput"),
+        clearAll = document.getElementById("clearAll");
+      const search = document.getElementById("search"),
+        toggleViz = document.getElementById("toggleViz"),
+        vizBox = document.getElementById("vizBox"),
+        stage = document.querySelector(".stage");
+      const progress = document.getElementById("progress"),
+        bar = document.getElementById("bar"),
+        handle = document.getElementById("handle"),
+        cur = document.getElementById("cur"),
+        dur = document.getElementById("dur");
+      const volume = document.getElementById("volume");
+
+      const fmt = (s) =>
+        !isFinite(s)
+          ? "0:00"
+          : `${Math.floor(s / 60)}:${("0" + Math.floor(s % 60)).slice(-2)}`;
+      function save() {
+        localStorage.setItem("songs", JSON.stringify(songs));
+        localStorage.setItem("index", index);
+      }
+
+      async function rebuildBlobURLs() {
+        const rows = await idbGetAll();
+        for (const s of songs) {
+          if (!s.persistent) {
+            const r = rows.find((x) => x.name === s.name);
+            if (r && r.blob) s.src = URL.createObjectURL(r.blob);
+          }
+        }
+      }
+
+      /* ========== UI/Player ========== */
+      function renderList() {
+        const q = (search.value || "").toLowerCase().trim();
+        listEl.innerHTML = "";
+        songs.forEach((s, i) => {
+          if (q && !`${s.title} ${s.artist}`.toLowerCase().includes(q)) return;
+          const row = document.createElement("div");
+          row.className = "song" + (i === index ? " active" : "");
+          row.innerHTML = `<img class="cover" src="${s.cover}" alt=""><div class="meta"><div class="title">${s.title}</div><div class="artist">${s.artist}</div></div>`;
+          row.onclick = () => {
+            load(i);
+            play();
+          };
+          listEl.appendChild(row);
+        });
+      }
+      function load(i = index) {
+        index = i;
+        const s = songs[index] || {};
+        titleEl.textContent = s.title || "—";
+        artistEl.textContent = s.artist || "—";
+        if (s.cover) coverEl.src = s.cover;
+        audio.src = s.src || "";
+        save();
+        document
+          .querySelectorAll(".song")
+          .forEach((el) => el.classList.remove("active"));
+        const rows = [...document.querySelectorAll(".song")];
+        if (rows[index]) rows[index].classList.add("active");
+      }
+      function play() {
+        audio.play();
+        playBtn.textContent = "⏸";
+      }
+      function pause() {
+        audio.pause();
+        playBtn.textContent = "▶";
+      }
+
+      playBtn.addEventListener("click", () =>
+        audio.paused ? play() : pause()
+      );
+      prevBtn.addEventListener("click", () => {
+        index = (index - 1 + songs.length) % songs.length;
+        load(index);
+        play();
+      });
+      nextBtn.addEventListener("click", () => {
+        index = (index + 1) % songs.length;
+        load(index);
+        play();
+      });
+
+      audio.addEventListener("timeupdate", () => {
+        const pct = (audio.currentTime / (audio.duration || 1)) * 100;
+        bar.style.width = pct + "%";
+        handle.style.left = pct + "%";
+        cur.textContent = fmt(audio.currentTime);
+        dur.textContent = fmt(audio.duration);
+      });
+      audio.addEventListener("ended", () => {
+        index = (index + 1) % songs.length;
+        load(index);
+        play();
+      });
+
+      let dragging = false;
+      function seek(e) {
+        const rect = progress.getBoundingClientRect();
+        const ratio = Math.min(
+          1,
+          Math.max(0, (e.clientX - rect.left) / rect.width)
+        );
+        audio.currentTime = ratio * (audio.duration || 0);
+      }
+      progress.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        seek(e);
+      });
+      window.addEventListener("pointermove", (e) => {
+        if (dragging) seek(e);
+      });
+      window.addEventListener("pointerup", () => (dragging = false));
+
+      const savedVol = parseFloat(localStorage.getItem("volume") || "0.9");
+      audio.volume = isFinite(savedVol) ? savedVol : 0.9;
+      volume.value = audio.volume;
+      volume.addEventListener("input", () => {
+        audio.volume = parseFloat(volume.value);
+        localStorage.setItem("volume", audio.volume);
+      });
+      search.addEventListener("input", renderList);
+
+      /* Upload + lưu bền */
+      fileInput.addEventListener("change", async (e) => {
+        const files = [...e.target.files];
+        for (const f of files) {
+          const name = f.name;
+          const base = name.replace(/\.[^/.]+$/, "");
+          let src = URL.createObjectURL(f),
+            persistent = false;
+          try {
+            const chk = await fetch("songs/" + encodeURIComponent(name));
+            if (chk.ok) {
+              src = "songs/" + name;
+              persistent = true;
+            }
+          } catch {}
+          const meta = {
+            title: base,
+            artist: "Tải lên",
+            name,
+            src,
+            cover: `https://picsum.photos/800?random=${Math.floor(
+              Math.random() * 1000
+            )}`,
+            persistent,
+          };
+          songs.push(meta);
+          if (!persistent) {
+            await idbPut(name, f, { title: base });
+          }
+        }
+        save();
+        renderList();
+        if (files.length) {
+          load(songs.length - files.length);
+          play();
+        }
+        fileInput.value = "";
+      });
+
+      /* Xóa tất cả */
+      clearAll.addEventListener("click", async () => {
+        if (confirm("Xóa toàn bộ danh sách nhạc (bao gồm dữ liệu đã lưu)?")) {
+          songs = [];
+          localStorage.removeItem("songs");
+          await idbClear();
+          listEl.innerHTML = "";
+          audio.pause();
+          audio.src = "";
+          titleEl.textContent = "—";
+          artistEl.textContent = "—";
+          bar.style.width = "0%";
+          handle.style.left = "0%";
+          cur.textContent = "0:00";
+          dur.textContent = "0:00";
+        }
+      });
+
+      /* ========== Visualizer: FULL “nhảy theo nhạc” ========== */
+      let actx,
+        analyser,
+        srcNode,
+        rafId = null;
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      function fit() {
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+      }
+      addEventListener("resize", fit);
+      fit();
+
+      async function ensureAudioContext() {
+        if (!actx) {
+          actx = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = actx.createAnalyser();
+          analyser.fftSize = 2048; // mịn
+          analyser.smoothingTimeConstant = 0.75;
+          srcNode = actx.createMediaElementSource(audio);
+          srcNode.connect(analyser);
+          analyser.connect(actx.destination);
+        }
+        if (actx.state === "suspended") await actx.resume();
+      }
+
+      function startDraw() {
+        if (!rafId) rafId = requestAnimationFrame(draw);
+      }
+      function stopDraw() {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      }
+
+      function draw() {
+        const w = canvas.width,
+          h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const arr = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(arr);
+
+        const bars = 96,
+          step = Math.floor(arr.length / bars);
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, "#ff6a00");
+        grad.addColorStop(1, "#4dbbe6");
+        ctx.fillStyle = grad;
+        ctx.shadowColor = "rgba(255,106,0,.35)";
+        ctx.shadowBlur = 18;
+
+        const base = h * 0.86,
+          bw = (w / bars) * 0.7,
+          gap = (w / bars) * 0.3;
+        for (let i = 0; i < bars; i++) {
+          const v = arr[i * step] / 255,
+            bh = Math.max(2, v * h * 0.72),
+            x = i * (bw + gap);
+          ctx.fillRect(x, base - bh, bw, bh); // cột chính
+          ctx.fillRect(x, base, bw, bh * 0.22); // phản chiếu nhẹ
+        }
+        rafId = requestAnimationFrame(draw);
+      }
+
+      /* bật sẵn visualizer */
+      function applyVizLayout() {
+        vizBox.hidden = !toggleViz.checked;
+        stage.classList.toggle("no-viz", !toggleViz.checked);
+      }
+      toggleViz.checked = true;
+      applyVizLayout();
+
+      audio.addEventListener("play", async () => {
+        await ensureAudioContext();
+        if (toggleViz.checked) startDraw();
+      });
+      audio.addEventListener("pause", () => stopDraw());
+      audio.addEventListener("ended", () => stopDraw());
+      toggleViz.addEventListener("change", async () => {
+        applyVizLayout();
+        if (toggleViz.checked) {
+          await ensureAudioContext();
+          startDraw();
+        } else stopDraw();
+      });
+
+      /* ========== Init ========== */
+      (async () => {
+        await rebuildBlobURLs();
+        renderList();
+        load(Math.min(index, Math.max(0, songs.length - 1)));
+      })();
+    </script>
+  </body>
+</html>
